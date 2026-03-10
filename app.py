@@ -286,8 +286,9 @@ def build_comparison_html(results, active_mode, timings=None):
     )
 
 
-def build_algo_comparison_html(astar_result, dijkstra_result, astar_ms, dijkstra_ms):
-    """Side-by-side A* vs Dijkstra comparison table (both use fastest cost)."""
+def build_algo_comparison_html(astar_result, dijkstra_result, astar_ms, dijkstra_ms, mode="fastest"):
+    """Side-by-side A* vs Dijkstra comparison table for the active mode."""
+    mode_label = MODE_LABELS.get(mode, mode).strip()
     a_path, _, a_xfers, a_ttime, a_dist, a_nodes, _ = astar_result
     d_path, _, d_xfers, d_ttime, d_dist, d_nodes, _ = dijkstra_result
 
@@ -317,7 +318,7 @@ def build_algo_comparison_html(astar_result, dijkstra_result, astar_ms, dijkstra
     if a_path:
         rows += (
             f'<tr class="hi">'
-            f'<td>A* <span style="font-size:0.68rem;color:#009645;">fastest mode</span>{same_tag}</td>'
+            f'<td>A* <span style="font-size:0.68rem;color:#009645;">{mode_label}</span>{same_tag}</td>'
             f'<td><b>{fmt_time(a_ttime)}</b></td>'
             f'<td>{len(a_path)-1}</td>'
             f'<td>{a_xfers}</td>'
@@ -794,10 +795,10 @@ with left:
         # Pick which result to display based on active algorithm
         if active_algo == "astar":
             _display_result = results[active_mode]
-            _display_ms     = elapsed_ms
+            _display_ms     = timings[active_mode]
         else:
             _display_result = dijkstra_results[active_mode]
-            _display_ms     = sum(dijkstra_timings.values())
+            _display_ms     = dijkstra_timings[active_mode]
 
         path, g, xfers, ttime, dist, nodes_exp, explored_set = _display_result
 
@@ -870,7 +871,9 @@ with right:
 
     # ── Comparison table below the map ────────────────────────────────────────
     if results:
-        st.markdown(build_comparison_html(results, active_mode, timings), unsafe_allow_html=True)
+        _cmp_data    = results         if active_algo == "astar" else dijkstra_results
+        _cmp_timings = timings         if active_algo == "astar" else dijkstra_timings
+        st.markdown(build_comparison_html(_cmp_data, active_mode, _cmp_timings), unsafe_allow_html=True)
 
     # ── A* vs Dijkstra comparison ──────────────────────────────────────────────
     if results and dijkstra_results:
@@ -878,6 +881,7 @@ with right:
             build_algo_comparison_html(
                 results[active_mode], dijkstra_results[active_mode],
                 timings[active_mode], dijkstra_timings[active_mode],
+                mode=active_mode,
             ),
             unsafe_allow_html=True,
         )
