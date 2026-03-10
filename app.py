@@ -657,8 +657,8 @@ with left:
     active_algo = st.session_state.active_algo
 
     # ── Auto-compute on every render ──────────────────────
-    dijkstra_result  = None
-    dijkstra_time_ms = 0.0
+    dijkstra_results = {}
+    dijkstra_timings = {}
 
     if start_full == end_full:
         st.markdown(
@@ -677,11 +677,10 @@ with left:
             _t0 = _time.perf_counter()
             results[_m] = astar(graph, stations, start_full, end_full, _m)
             timings[_m] = (_time.perf_counter() - _t0) * 1000
+            _t0 = _time.perf_counter()
+            dijkstra_results[_m] = dijkstra(graph, stations, start_full, end_full, _m)
+            dijkstra_timings[_m] = (_time.perf_counter() - _t0) * 1000
         elapsed_ms = sum(timings.values())
-
-        _t0 = _time.perf_counter()
-        dijkstra_result  = dijkstra(graph, stations, start_full, end_full)
-        dijkstra_time_ms = (_time.perf_counter() - _t0) * 1000
 
     # ── Algorithm toggle ──────────────────────────────────────────────────────
     if results:
@@ -703,12 +702,13 @@ with left:
 
             # Pick result to display on the card
             if _algo_key == "astar":
-                _r = results[active_mode]
+                _r      = results[active_mode]
+                _ms_val = timings[active_mode]
             else:
-                _r = dijkstra_result
+                _r      = dijkstra_results.get(active_mode)
+                _ms_val = dijkstra_timings.get(active_mode, 0.0)
 
             _nodes = _r[5] if _r and _r[0] else "—"
-            _ms_val = timings["fastest"] if _algo_key == "astar" else dijkstra_time_ms
 
             _col = _ac1 if _algo_key == "astar" else _ac2
             with _col:
@@ -741,22 +741,25 @@ with left:
             unsafe_allow_html=True,
         )
         _rc1, _rc2 = st.columns(2, gap="small")
+        _algo_prefix = "A*" if active_algo == "astar" else "Dijkstra"
+        _active_results = results if active_algo == "astar" else dijkstra_results
         _mode_meta = [
-            ("fastest",           "", "FASTEST ROUTE",      "A* · Time"),
-            ("least_transfers",   "", "LEAST TRANSFERS",  "A* · Transfers"),
-            ("shortest_distance", "", "SHORTEST DISTANCE","A* · Distance"),
-            ("fewest_stations",   "", "FEWEST STATIONS", "A* · Stops"),
+            ("fastest",           "", "FASTEST ROUTE",      f"{_algo_prefix} · Time"),
+            ("least_transfers",   "", "LEAST TRANSFERS",    f"{_algo_prefix} · Transfers"),
+            ("shortest_distance", "", "SHORTEST DISTANCE",  f"{_algo_prefix} · Distance"),
+            ("fewest_stations",   "", "FEWEST STATIONS",    f"{_algo_prefix} · Stops"),
         ]
         for _i, (_mode, _icon, _lbl, _algo) in enumerate(_mode_meta):
-            _pm, _, _xm, _tm, _dm, _, _ = results[_mode]
+            _pm, _, _xm, _tm, _dm, _, _ = _active_results[_mode]
+            _sv = ""
             if _mode == "fastest":
-                _mv, _sv = fmt_time(_tm), f"{_xm} transfer{'s' if _xm!=1 else ''}"
+                _mv = fmt_time(_tm)
             elif _mode == "least_transfers":
-                _mv, _sv = str(_xm), f"transfer{'s' if _xm!=1 else ''} · {fmt_time(_tm)}"
+                _mv = f"{_xm} transfer{'s' if _xm!=1 else ''}"
             elif _mode == "shortest_distance":
-                _mv, _sv = f"{_dm:.1f}", "km"
+                _mv = f"{_dm:.1f} km"
             else:
-                _mv, _sv = (str(len(_pm)-1) if _pm else "-"), f"stops · {fmt_time(_tm)}"
+                _mv = f"{len(_pm)-1} stops" if _pm else "-"
             _segs_m  = get_path_segments(_pm, graph) if _pm else []
             _lines_m = list(dict.fromkeys(s[0] for s in _segs_m if s[0] not in ("transfer","Unknown")))
             _badges  = "".join(lbadge(l) for l in _lines_m)
@@ -793,8 +796,8 @@ with left:
             _display_result = results[active_mode]
             _display_ms     = elapsed_ms
         else:
-            _display_result = dijkstra_result
-            _display_ms     = dijkstra_time_ms
+            _display_result = dijkstra_results[active_mode]
+            _display_ms     = sum(dijkstra_timings.values())
 
         path, g, xfers, ttime, dist, nodes_exp, explored_set = _display_result
 
@@ -828,7 +831,7 @@ with right:
             _right_result = results[active_mode]
             _right_label  = _algo_display.get(active_mode, "A*")
         else:
-            _right_result = dijkstra_result
+            _right_result = dijkstra_results[active_mode]
             _right_label  = "Dijkstra · h(n) = 0 (No Heuristic)"
 
         path, g, xfers, ttime, dist, nodes_exp, _active_explored = _right_result
@@ -858,9 +861,10 @@ with right:
             path = results[active_mode][0]
             _map_explored = results[active_mode][6]
         else:
-            path = dijkstra_result[0] if dijkstra_result else []
-            if dijkstra_result:
-                _map_explored = dijkstra_result[6]
+            _dr = dijkstra_results.get(active_mode)
+            path = _dr[0] if _dr else []
+            if _dr:
+                _map_explored = _dr[6]
 
     st_folium(build_map(path, _map_explored, bool(_map_explored)), width=None, height=665, returned_objects=[])
 
@@ -869,11 +873,11 @@ with right:
         st.markdown(build_comparison_html(results, active_mode, timings), unsafe_allow_html=True)
 
     # ── A* vs Dijkstra comparison ──────────────────────────────────────────────
-    if results and dijkstra_result:
+    if results and dijkstra_results:
         st.markdown(
             build_algo_comparison_html(
-                results["fastest"], dijkstra_result,
-                timings["fastest"], dijkstra_time_ms,
+                results[active_mode], dijkstra_results[active_mode],
+                timings[active_mode], dijkstra_timings[active_mode],
             ),
             unsafe_allow_html=True,
         )

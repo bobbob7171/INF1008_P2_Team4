@@ -17,16 +17,20 @@ import heapq
 from mrt_graph import LINE_SPEED, TRANSFER_PENALTY
 
 
-def dijkstra(graph: dict, stations: dict, start_name: str, end_name: str):
+def dijkstra(graph: dict, stations: dict, start_name: str, end_name: str,
+             mode: str = "fastest"):
     """
-    Dijkstra's algorithm for MRT shortest-time path.
+    Dijkstra's algorithm for MRT pathfinding.
 
-    Identical edge cost to A* 'fastest' mode (travel time + transfer penalty),
-    but with NO heuristic: h(n) = 0, so f(n) = g(n) only.
+    Supports the same four optimisation modes as astar() but with NO heuristic:
+    h(n) = 0, so f(n) = g(n) only.  This makes Dijkstra explore all directions
+    uniformly — a direct apples-to-apples baseline for each A* mode.
 
-    This makes Dijkstra a direct apples-to-apples baseline for A* fastest:
-    both find the same optimal path, but Dijkstra explores more nodes because
-    it cannot use geographic distance to guide the search.
+    Modes:
+        fastest           – minimise total travel time (including transfer waits)
+        least_transfers   – minimise number of line changes
+        shortest_distance – minimise total track distance
+        fewest_stations   – minimise number of intermediate stops
 
     Returns the same 7-tuple as astar() for easy side-by-side comparison:
         (path, g_cost, transfers, total_time_min, total_dist_km,
@@ -95,10 +99,21 @@ def dijkstra(graph: dict, stations: dict, start_name: str, end_name: str):
                 and edge_line not in ("transfer", curr_line)
             )
 
-            # Same cost function as A* fastest — no heuristic added.
-            move_cost = travel_time
-            if is_transfer or edge_line == "transfer":
-                move_cost += TRANSFER_PENALTY
+            # Same edge cost functions as astar() — only difference is h(n)=0.
+            if mode == "fastest":
+                move_cost = travel_time
+                if is_transfer or edge_line == "transfer":
+                    move_cost += TRANSFER_PENALTY
+            elif mode == "least_transfers":
+                move_cost = travel_time / 1000.0
+                if is_transfer or edge_line == "transfer":
+                    move_cost += 1.0
+            elif mode == "shortest_distance":
+                move_cost = dist_km
+            elif mode == "fewest_stations":
+                move_cost = 1.0
+            else:
+                move_cost = travel_time
 
             new_g = g + move_cost
 
