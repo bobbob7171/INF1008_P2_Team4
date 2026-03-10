@@ -774,9 +774,9 @@ with left:
         ]
         for _algo_key, _lbl, _desc in _algo_meta: # Removed _icon from the loop unpack
             _active = (_algo_key == active_algo)
-            _bc = "#1A3A5C" if _active else "#DDE3EE"
+            _bc = "#009645" if _active else "#DDE3EE"
             _bw = "2px" if _active else "1.5px"
-            _bg = "rgba(26,58,92,0.04)" if _active else "#FFFFFF"
+            _bg = "rgba(0,150,69,0.04)" if _active else "#FFFFFF"
             _vc = "#0F172A" if _active else "#475569"
 
             # Pick result to display on the card
