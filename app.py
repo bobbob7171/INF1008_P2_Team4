@@ -13,7 +13,8 @@ from mrt_graph import (
     build_graph, display_name,
     LINE_COLORS, LINE_NAMES, TRANSFER_PENALTY,
 )
-from astar import astar, dijkstra, get_path_segments, get_transfer_stations
+from astar import astar, get_path_segments, get_transfer_stations
+from dijkstra import dijkstra
 
 # ── page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -651,6 +652,10 @@ with left:
         st.session_state.active_mode = "fastest"
     active_mode = st.session_state.active_mode
 
+    if "active_algo" not in st.session_state:
+        st.session_state.active_algo = "astar"
+    active_algo = st.session_state.active_algo
+
     # ── Auto-compute on every render ──────────────────────
     dijkstra_result  = None
     dijkstra_time_ms = 0.0
@@ -678,10 +683,61 @@ with left:
         dijkstra_result  = dijkstra(graph, stations, start_full, end_full)
         dijkstra_time_ms = (_time.perf_counter() - _t0) * 1000
 
+    # ── Algorithm toggle ──────────────────────────────────────────────────────
+    if results:
+        st.markdown(
+            '<div class="card-title" style="margin:0.7rem 0 0.4rem;">ALGORITHM</div>',
+            unsafe_allow_html=True,
+        )
+        _ac1, _ac2 = st.columns(2, gap="small")
+        _algo_meta = [
+            ("astar",    "🔺", "A* Search",   "Uses h(n) = geographic distance heuristic"),
+            ("dijkstra", "⬡",  "Dijkstra",     "h(n) = 0 · Explores all directions uniformly"),
+        ]
+        for _algo_key, _icon, _lbl, _desc in _algo_meta:
+            _active = (_algo_key == active_algo)
+            _bc = "#1A3A5C" if _active else "#DDE3EE"
+            _bw = "2px" if _active else "1.5px"
+            _bg = "rgba(26,58,92,0.04)" if _active else "#FFFFFF"
+            _vc = "#1A3A5C" if _active else "#5A6F8A"
+
+            # Pick result to display on the card
+            if _algo_key == "astar":
+                _r = results[active_mode]
+            else:
+                _r = dijkstra_result
+
+            _nodes = _r[5] if _r and _r[0] else "—"
+            _ms_val = timings["fastest"] if _algo_key == "astar" else dijkstra_time_ms
+
+            _col = _ac1 if _algo_key == "astar" else _ac2
+            with _col:
+                st.markdown(
+                    f'<div style="border:{_bw} solid {_bc};background:{_bg};'
+                    f'border-radius:12px 12px 0 0;padding:10px 10px 8px;text-align:center;">'
+                    f'<div style="font-size:20px;">{_icon}</div>'
+                    f'<div style="font-size:11px;font-weight:700;letter-spacing:1px;'
+                    f'text-transform:uppercase;color:{_vc};margin:3px 0 1px;">{_lbl}</div>'
+                    f'<div style="font-size:10px;color:#9AAAC0;margin-bottom:4px;">{_desc}</div>'
+                    f'<div style="font-size:18px;font-weight:700;color:#1A2035;">{_nodes}</div>'
+                    f'<div style="font-size:10px;color:#5A6F8A;margin-bottom:2px;">nodes explored</div>'
+                    f'<div style="font-size:10px;color:#748477;">{_ms_val:.1f} ms</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+                if st.button(
+                    "✓ Active" if _active else "Select",
+                    key=f"algo_btn_{_algo_key}",
+                    use_container_width=True,
+                    type="primary" if _active else "secondary",
+                ):
+                    st.session_state.active_algo = _algo_key
+                    st.rerun()
+
     # ── Route option cards ────────────────────────────────────────────────────
     if results:
         st.markdown(
-            '<div class="card-title" style="margin:0.7rem 0 0.4rem;">ROUTE OPTIONS</div>',
+            '<div class="card-title" style="margin:0.9rem 0 0.4rem;">ROUTE OPTIONS</div>',
             unsafe_allow_html=True,
         )
         _rc1, _rc2 = st.columns(2, gap="small")
@@ -692,7 +748,7 @@ with left:
             ("fewest_stations",   "", "FEWEST STATIONS", "A* · Stops"),
         ]
         for _i, (_mode, _icon, _lbl, _algo) in enumerate(_mode_meta):
-            _pm, _, _xm, _tm, _dm, _nem, _ = results[_mode]
+            _pm, _, _xm, _tm, _dm, _, _ = results[_mode]
             if _mode == "fastest":
                 _mv, _sv = fmt_time(_tm), f"{_xm} transfer{'s' if _xm!=1 else ''}"
             elif _mode == "least_transfers":
@@ -732,7 +788,15 @@ with left:
 
     # ── Results (left column: lines, route, directions) ───────────────────────
     if results:
-        path, g, xfers, ttime, dist, nodes_exp, explored_set = results[active_mode]
+        # Pick which result to display based on active algorithm
+        if active_algo == "astar":
+            _display_result = results[active_mode]
+            _display_ms     = elapsed_ms
+        else:
+            _display_result = dijkstra_result
+            _display_ms     = dijkstra_time_ms
+
+        path, g, xfers, ttime, dist, nodes_exp, explored_set = _display_result
 
         if not path:
             st.markdown(
@@ -743,7 +807,7 @@ with left:
             segs       = get_path_segments(path, graph)
             lines_used = [s[0] for s in segs if s[0] != "transfer"]
 
-            st.markdown(build_lines_html(lines_used, elapsed_ms),  unsafe_allow_html=True)
+            st.markdown(build_lines_html(lines_used, _display_ms), unsafe_allow_html=True)
             st.markdown(build_route_html(path),                    unsafe_allow_html=True)
             st.markdown(build_directions_html(path),               unsafe_allow_html=True)
 
@@ -759,49 +823,44 @@ with right:
         "fewest_stations":   "Fewest Stations · A* (Hop Count)",
     }
     if results:
-        path, g, xfers, ttime, dist, nodes_exp, explored_set = results[active_mode]
+        # Pick the result to show based on active algorithm
+        if active_algo == "astar":
+            _right_result = results[active_mode]
+            _right_label  = _algo_display.get(active_mode, "A*")
+        else:
+            _right_result = dijkstra_result
+            _right_label  = "Dijkstra · h(n) = 0 (No Heuristic)"
+
+        path, g, xfers, ttime, dist, nodes_exp, _active_explored = _right_result
         if path:
             st.markdown(
                 f'<div style="font-size:0.72rem;font-weight:600;color:#1A3A5C;'
-                f'margin-bottom:0.2rem;letter-spacing:0.3px;">'
-                f'{_algo_display.get(active_mode, "A*")}</div>',
+                f'margin-bottom:0.2rem;letter-spacing:0.3px;">{_right_label}</div>',
                 unsafe_allow_html=True,
             )
             st.markdown(build_stats_html(ttime, len(path)-1, xfers, dist, nodes_exp),
                         unsafe_allow_html=True)
 
-    explored_view = st.radio(
-        "Show explored nodes on map",
-        options=["None", "A* explored nodes", "Dijkstra explored nodes"],
-        index=1,
-        horizontal=True,
-        help=(
-            "Visualise which stations each algorithm visited during its search. "
-            "A* focuses toward the destination using a geographic heuristic; "
-            "Dijkstra (h = 0) spreads in all directions uniformly. "
-            "The difference in coverage is the heuristic advantage of A*."
-        ),
-    )
-
     _exp_suffix = {
-        "None":                    "",
-        "A* explored nodes":       ' <span style="font-size:0.68rem;color:#009645;font-weight:600;">· A* explored nodes</span>',
-        "Dijkstra explored nodes": ' <span style="font-size:0.68rem;color:#D42E12;font-weight:600;">· Dijkstra explored nodes</span>',
+        "astar":    ' <span style="font-size:0.68rem;color:#009645;font-weight:600;">· A* explored nodes</span>',
+        "dijkstra": ' <span style="font-size:0.68rem;color:#D42E12;font-weight:600;">· Dijkstra explored nodes</span>',
     }
     st.markdown(
         f'<div class="card-title" style="margin-bottom:0.4rem;">🗺️ &nbsp;Interactive Route Map'
-        f'{_exp_suffix.get(explored_view, "")}</div>',
+        f'{_exp_suffix.get(active_algo, "")}</div>',
         unsafe_allow_html=True,
     )
 
     path = []
     _map_explored = set()
     if results:
-        path, g, xfers, ttime, dist, nodes_exp, _astar_explored = results[active_mode]
-        if explored_view == "A* explored nodes":
-            _map_explored = _astar_explored
-        elif explored_view == "Dijkstra explored nodes" and dijkstra_result:
-            _map_explored = dijkstra_result[6]
+        if active_algo == "astar":
+            path = results[active_mode][0]
+            _map_explored = results[active_mode][6]
+        else:
+            path = dijkstra_result[0] if dijkstra_result else []
+            if dijkstra_result:
+                _map_explored = dijkstra_result[6]
 
     st_folium(build_map(path, _map_explored, bool(_map_explored)), width=None, height=665, returned_objects=[])
 
