@@ -1,11 +1,12 @@
 """
-app.py  –  Smart MRT Navigator  v4
+app.py  –  Smart MRT Navigator 
 Run:  streamlit run app.py
 """
 
 import re
 import streamlit as st
 import folium
+from folium import plugins
 from streamlit_folium import st_folium
 import time as _time
 
@@ -32,145 +33,147 @@ st.markdown("""
 *, html, body { font-family: 'DM Sans', sans-serif !important; }
 
 /* App shell */
-.stApp                { background: #F5F7FA !important; color: #1A2035 !important; }
+.stApp                { background: #F5F7FA !important; color: #1E293B !important; }
 [data-testid="stHeader"] { background: transparent !important; }
 .block-container      { padding: 0 1.5rem 2rem !important; max-width: 100% !important; }
 
 /* ── Selectbox ── */
-div[data-baseweb="select"] > div               { background: #FFFFFF !important; border: 1.5px solid #DDE3EE !important; border-radius: 10px !important; color: #1A2035 !important; }
-div[data-baseweb="select"] *                   { color: #1A2035 !important; }
-div[data-baseweb="select"] input               { background: transparent !important; caret-color: #1A2035 !important; }
-div[data-baseweb="popover"]                    { background: #FFFFFF !important; border: 1.5px solid #DDE3EE !important; border-radius: 10px !important; box-shadow: 0 8px 32px rgba(0,0,0,0.10) !important; }
-div[data-baseweb="popover"] *                  { background: #FFFFFF !important; color: #1A2035 !important; }
+div[data-baseweb="select"] > div               { background: #FFFFFF !important; border: 1.5px solid #CBD5E1 !important; border-radius: 10px !important; color: #1E293B !important; }
+div[data-baseweb="select"] * { color: #1E293B !important; }
+div[data-baseweb="select"] input               { background: transparent !important; caret-color: #1E293B !important; }
+div[data-baseweb="popover"]                    { background: #FFFFFF !important; border: 1.5px solid #CBD5E1 !important; border-radius: 10px !important; box-shadow: 0 8px 32px rgba(0,0,0,0.10) !important; }
+div[data-baseweb="popover"] * { background: #FFFFFF !important; color: #1E293B !important; }
 ul[data-baseweb="menu"]                        { background: #FFFFFF !important; border: none !important; }
-ul[data-baseweb="menu"] li                     { background: #FFFFFF !important; color: #1A2035 !important; }
-ul[data-baseweb="menu"] li:hover               { background: #F0F4FF !important; }
-ul[data-baseweb="menu"] li[aria-selected="true"] { background: #E8F0FE !important; }
-[role="combobox"] input                        { color: #1A2035 !important; background: transparent !important; }
-[role="option"]                                { background: #FFFFFF !important; color: #1A2035 !important; }
-[role="option"]:hover                          { background: #F0F4FF !important; }
-.stSelectbox > label                           { color: #6B7FA8 !important; font-size: 0.78rem !important; font-weight: 600 !important; text-transform: uppercase; letter-spacing: 0.8px; }
-.stSelectbox svg                               { fill: #9AAAC0 !important; }
+ul[data-baseweb="menu"] li                     { background: #FFFFFF !important; color: #1E293B !important; }
+ul[data-baseweb="menu"] li:hover               { background: #F1F5F9 !important; }
+ul[data-baseweb="menu"] li[aria-selected="true"] { background: #E2E8F0 !important; }
+[role="combobox"] input                        { color: #1E293B !important; background: transparent !important; }
+[role="option"]                                { background: #FFFFFF !important; color: #1E293B !important; }
+[role="option"]:hover                          { background: #F1F5F9 !important; }
+.stSelectbox > label                           { color: #475569 !important; font-size: 0.85rem !important; font-weight: 600 !important; text-transform: uppercase; letter-spacing: 0.8px; }
+.stSelectbox svg                               { fill: #64748B !important; }
 
 /* ── Hero ── */
 .hero                 { background: linear-gradient(135deg, #1A3A5C 0%, #0F5C3A 100%);
-                        border-radius: 0 0 20px 20px;
-                        padding: 1.4rem 2rem;
+                        border-radius: 0 0 20px 20px; padding: 1.4rem 2rem;
                         display: flex; align-items: center; gap: 1.2rem;
-                        margin: 0 -1.5rem 1.8rem;
-                        box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
-.hero-title           { font-size: 1.8rem; font-weight: 700; color: #FFF;
-                        letter-spacing: -0.5px; line-height: 1.1; }
-.hero-sub             { font-size: 0.78rem; color: rgba(255,255,255,0.55); margin-top: 4px; }
+                        margin: 0 -1.5rem 1.8rem; box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
+.hero-title           { font-size: 1.8rem; font-weight: 700; color: #FFF; letter-spacing: -0.5px; line-height: 1.1; }
+.hero-sub             { font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-top: 4px; }
 
 /* ── Cards ── */
-.card                 { background: #FFFFFF; border: 1.5px solid #DDE3EE;
-                        border-radius: 14px; padding: 1rem 1.25rem; margin-bottom: 0.85rem;
-                        box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
-.card-title           { font-size: 0.63rem; font-weight: 700; letter-spacing: 1.6px;
-                        text-transform: uppercase; color: #5A6F8A; margin-bottom: 0.7rem; }
+.card, .journey-card, .dir-wrap, .cmp-wrap { 
+    background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 14px; 
+    padding: 1rem 1.25rem; margin-bottom: 0.85rem; box-shadow: 0 2px 8px rgba(0,0,0,0.03); 
+}
+.journey-card { padding-bottom: 0.6rem; }
+.card-title           { font-size: 0.75rem; font-weight: 700; letter-spacing: 1.6px;
+                        text-transform: uppercase; color: #334155; margin-bottom: 0.7rem; }
 
 /* ── Journey planner card ── */
-.journey-card         { background: #FFFFFF; border: 1.5px solid #DDE3EE;
-                        border-radius: 14px; padding: 1rem 1.25rem 0.6rem; margin-bottom: 0.85rem;
-                        box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
-.journey-field-label  { font-size: 0.63rem; font-weight: 700; letter-spacing: 1.4px;
-                        text-transform: uppercase; margin-bottom: 2px; }
+.journey-field-label  { font-size: 0.75rem; font-weight: 700; letter-spacing: 1.4px;
+                        text-transform: uppercase; color: #334155; margin-bottom: 2px; }
 .journey-info         { display: flex; align-items: center; gap: 6px;
-                        padding: 5px 10px 5px 8px; background: #F5F7FA;
-                        border: 1.5px solid #DDE3EE; border-radius: 0 0 8px 8px;
+                        padding: 5px 10px 5px 8px; background: #F8FAFC;
+                        border: 1px solid #CBD5E1; border-radius: 0 0 8px 8px;
                         margin-top: -6px; margin-bottom: 4px; }
-.journey-info-lines   { font-size: 0.67rem; color: #5A6F8A; }
+.journey-info-lines   { font-size: 0.75rem; color: #475569; }
 .journey-divider      { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
-.journey-divider-line { flex: 1; height: 1px; background: #DDE3EE; }
-.journey-divider-icon { font-size: 0.7rem; color: #7A8FA8; }
+.journey-divider-line { flex: 1; height: 1px; background: #CBD5E1; }
+.journey-divider-icon { font-size: 0.8rem; color: #64748B; }
 
 /* ── Badge ── */
 .lbadge               { display: inline-block; border-radius: 4px; padding: 1px 6px;
-                        font-size: 0.62rem; font-weight: 700; color: #FFF; margin-left: 3px; }
+                        font-size: 0.65rem; font-weight: 700; color: #FFF; margin-left: 3px; }
 
 /* ── Stat grid ── */
 .stat-grid            { display: flex; gap: 0.65rem; flex-wrap: wrap; margin-bottom: 0.85rem; }
 .stat-box             { flex: 1; min-width: 84px; background: #FFFFFF;
-                        border: 1.5px solid #DDE3EE; border-radius: 10px;
+                        border: 1px solid #CBD5E1; border-radius: 10px;
                         padding: 14px 8px; text-align: center;
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-.stat-val             { font-size: 26px !important; font-weight: 700; color: #1A2035; line-height: 1; }
-.stat-lbl             { font-size: 11px !important; color: #5A6F8A; text-transform: uppercase;
-                        letter-spacing: 1px; margin-top: 5px; }
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+.stat-val             { font-size: 26px !important; font-weight: 700; color: #0F172A; line-height: 1; }
+.stat-lbl             { font-size: 12px !important; font-weight: 600; color: #475569; 
+                        text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
 
 /* ── Directions ── */
-.dir-wrap             { background: #FFFFFF; border: 1.5px solid #DDE3EE;
-                        border-radius: 14px; padding: 0.9rem 1.1rem; margin-bottom: 0.85rem;
-                        box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
 .dir-seg              { display: flex; align-items: flex-start; gap: 0.65rem;
-                        padding: 0.55rem 0; border-bottom: 1px solid #EEF1F7; }
+                        padding: 0.65rem 0; border-bottom: 1px solid #E2E8F0; }
 .dir-seg:last-child   { border-bottom: none; }
-.seg-dot              { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
-.seg-body             { font-size: 0.83rem; color: #1A2035; line-height: 1.55; }
-.seg-body .dim        { color: #5A6F8A; font-size: 0.75rem; }
-.seg-body .xfer-pill  { display: inline-block; font-size: 0.68rem; color: #B06A00;
-                        background: rgba(245,166,35,0.10); border: 1px solid rgba(245,166,35,0.30);
-                        border-radius: 4px; padding: 1px 7px; margin-top: 3px; }
+.seg-dot              { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.seg-body             { font-size: 0.88rem; color: #1E293B; line-height: 1.55; }
+.seg-body .dim        { color: #475569; font-size: 0.8rem; }
+.seg-body .xfer-pill  { display: inline-block; font-size: 0.72rem; color: #B45309; font-weight: 600;
+                        background: #FEF3C7; border: 1px solid #FDE68A;
+                        border-radius: 4px; padding: 1px 7px; margin-top: 4px; }
 .dir-stop             { display: flex; align-items: center; gap: 0.55rem;
-                        padding: 0.25rem 0 0.25rem 1.5rem; border-bottom: 1px solid #F2F4F8; }
+                        padding: 0.3rem 0 0.3rem 1.5rem; border-bottom: 1px solid #F1F5F9; }
 .dir-stop:last-child  { border-bottom: none; }
-.stop-dot             { width: 6px; height: 6px; border-radius: 50%; opacity: 0.35; flex-shrink: 0; }
-.stop-name            { font-size: 0.76rem; color: #3D5270; }
+.stop-dot             { width: 6px; height: 6px; border-radius: 50%; opacity: 0.4; flex-shrink: 0; }
+.stop-name            { font-size: 0.8rem; color: #475569; }
 
 /* ── Comparison table ── */
-.cmp-wrap             { background: #FFFFFF; border: 1.5px solid #DDE3EE;
-                        border-radius: 14px; padding: 0.9rem 1.1rem; margin-bottom: 0.85rem;
-                        box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
-table.cmp             { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-table.cmp th          { color: #9AAAC0; font-size: 0.64rem; font-weight: 700; letter-spacing: 1px;
-                        text-transform: uppercase; padding: 7px 8px; text-align: left;
-                        border-bottom: 1.5px solid #EEF1F7; background: #F8FAFC; }
-table.cmp td          { padding: 7px 8px; border-bottom: 1px solid #F2F4F8; color: #2E4060; }
+table.cmp             { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+table.cmp th          { color: #334155; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px;
+                        text-transform: uppercase; padding: 10px 8px; text-align: left;
+                        border-bottom: 2px solid #E2E8F0; background: #F8FAFC; }
+table.cmp td          { padding: 10px 8px; border-bottom: 1px solid #E2E8F0; color: #1E293B; }
 table.cmp tr:last-child td { border-bottom: none; }
-table.cmp tr.hi td    { background: rgba(0,150,69,0.05); color: #1A2035; font-weight: 600; }
+table.cmp tr.hi td    { background: rgba(0,150,69,0.06); color: #0F172A; font-weight: 600; }
 table.cmp tr.hi td:first-child::before { content: "▶  "; color: #009645; }
 
 /* ── Explored nodes radio ── */
-div[data-testid="stRadio"] > label       { font-size: 0.63rem !important; font-weight: 700 !important;
-                                           letter-spacing: 1px; text-transform: uppercase; color: #5A6F8A !important; }
-div[data-testid="stRadio"] div[role="radiogroup"] { gap: 6px !important; }
-div[data-testid="stRadio"] label span    { font-size: 0.75rem !important; color: #2E4060 !important; }
+div[data-testid="stRadio"] > label       { font-size: 0.75rem !important; font-weight: 700 !important;
+                                           letter-spacing: 1px; text-transform: uppercase; color: #334155 !important; }
+div[data-testid="stRadio"] label span    { font-size: 0.85rem !important; color: #1E293B !important; font-weight: 500 !important; }
 
 /* scrollbar */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: #F5F7FA; }
-::-webkit-scrollbar-thumb { background: #DDE3EE; border-radius: 3px; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #F8FAFC; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
 
 /* ── Route option cards ── */
-.route-opt-card  { border-radius: 12px 12px 0 0; padding: 10px 8px 9px;
+.route-opt-card  { border-radius: 12px 12px 0 0; padding: 10px 8px 8px; /* Tighter padding */
                    text-align: center; border-bottom: none !important; }
-.route-opt-icon  { font-size: 22px !important; line-height: 1; }
-.route-opt-label { font-size: 11px !important; font-weight: 700; letter-spacing: 1.1px;
-                   text-transform: uppercase; color: #5A6F8A; margin: 4px 0 2px; }
-.route-opt-algo  { font-size: 11px !important; color: #9AAAC0; margin-bottom: 5px; }
-.route-opt-val   { font-size: 22px !important; font-weight: 700; color: #1A2035; line-height: 1; }
-.route-opt-sub   { font-size: 12px !important; color: #5A6F8A; margin: 3px 0 6px; }
+.route-opt-icon  { font-size: 20px !important; line-height: 1; }
+.route-opt-label { font-size: 12px !important; font-weight: 800; letter-spacing: 1.1px;
+                   text-transform: uppercase; color: #0F172A; margin: 4px 0 2px; }
+.route-opt-algo  { font-size: 11px !important; color: #64748B; margin-bottom: 5px; }
+.route-opt-val   { font-size: 18px !important; font-weight: 700; color: #0F172A; line-height: 1; }
+.route-opt-sub   { font-size: 12px !important; color: #475569; margin: 3px 0 6px; }
 
-/* ── Fix secondary buttons (unselected route cards) ── */
-div.stButton > button,
-div[data-testid="stButton"] > button {
-    background-color: #FFFFFF !important;
-    color: #2E4060 !important;
-    border: 1.5px solid #CCD5E0 !important;
+/* ── Educational Expander ── */
+[data-testid="stExpander"] {
+    background: #FFFFFF !important;
+    border: 1px solid #CBD5E1 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03) !important;
+    overflow: hidden;
 }
-div.stButton > button:hover,
-div[data-testid="stButton"] > button:hover {
-    background-color: #F0F4FF !important;
-    color: #1A2035 !important;
-    border-color: #9AAAC0 !important;
+[data-testid="stExpander"] details { background: transparent !important; }
+[data-testid="stExpander"] details summary {
+    font-size: 0.75rem !important; font-weight: 700 !important;
+    letter-spacing: 1.6px !important; text-transform: uppercase !important;
+    color: #334155 !important; padding: 1rem 1.25rem !important;
+    background: #FFFFFF !important;
 }
-/* Keep primary buttons green */
-div.stButton > button[kind="primary"],
-div[data-testid="stButton"] > button[kind="primary"] {
-    background-color: #009645 !important;
-    color: #FFFFFF !important;
-    border: none !important;
+[data-testid="stExpander"] details[open] summary {
+    border-bottom: 1px solid #E2E8F0 !important;
+}
+[data-testid="stExpander"] details > div[data-testid="stExpanderDetails"] {
+    padding: 1rem 1.25rem 0.75rem !important; background: #FFFFFF !important;
+}
+
+/* Fix secondary buttons */
+div.stButton > button, div[data-testid="stButton"] > button {
+    background-color: #FFFFFF !important; color: #1E293B !important;
+    border: 1px solid #CBD5E1 !important; font-weight: 600 !important;
+}
+div.stButton > button:hover, div[data-testid="stButton"] > button:hover {
+    background-color: #F8FAFC !important; border-color: #94A3B8 !important;
+}
+div.stButton > button[kind="primary"], div[data-testid="stButton"] > button[kind="primary"] {
+    background-color: #009645 !important; color: #FFFFFF !important; border: none !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -299,68 +302,131 @@ def build_algo_comparison_html(astar_result, dijkstra_result, astar_ms, dijkstra
             f'A* explored <strong style="color:#009645;">{saved_pct}% fewer nodes</strong> '
             f'({a_nodes} vs {d_nodes}) by using a geographic heuristic '
             f'h(n) = straight-line distance ÷ max speed to guide the search '
-            f'toward the destination. Dijkstra (h = 0) expands nodes in all '
-            f'directions uniformly.'
+            f'toward the destination. Dijkstra (h = 0) expands nodes uniformly.'
         )
     else:
         note = ""
 
     same_path = a_path == d_path if a_path and d_path else False
     same_tag = (
-        '<span style="font-size:0.68rem;background:#E8F5EE;color:#009645;'
-        'border:1px solid #B2DFCB;border-radius:4px;padding:1px 6px;margin-left:6px;">'
+        '<span style="font-size:0.75rem;background:#E8F5EE;color:#009645;font-weight:600;'
+        'border:1px solid #B2DFCB;border-radius:4px;padding:2px 6px;margin-left:6px;">'
         '✓ Same optimal path</span>'
     ) if same_path else ""
 
-    _complexity = '<code style="font-size:0.68rem;background:#F0F4FA;color:#3D5270;padding:1px 5px;border-radius:3px;">O((V+E) log V)</code>'
+    _complexity = '<code style="font-size:0.8rem;background:#F1F5F9;color:#334155;padding:2px 6px;border-radius:4px;font-weight:600;">O((V+E) log V)</code>'
 
     rows = ""
     if a_path:
         rows += (
             f'<tr class="hi">'
-            f'<td>A* <span style="font-size:0.68rem;color:#009645;">{mode_label}</span>{same_tag}</td>'
+            f'<td><strong>A*</strong> <span style="font-size:0.75rem;color:#009645;font-weight:600;">{mode_label}</span>{same_tag}</td>'
             f'<td><b>{fmt_time(a_ttime)}</b></td>'
             f'<td>{len(a_path)-1}</td>'
             f'<td>{a_xfers}</td>'
             f'<td style="color:#009645;font-weight:700;">{a_nodes}</td>'
-            f'<td style="color:#009645;font-weight:600;">{astar_ms:.1f} ms</td>'
-            f'<td>{_complexity} <span style="font-size:0.65rem;color:#009645;">small constant</span></td>'
+            f'<td style="color:#009645;font-weight:700;">{astar_ms:.1f} ms</td>'
+            f'<td>{_complexity} <span style="font-size:0.75rem;color:#009645;font-weight:600;margin-left:4px;">small const</span></td>'
             f'</tr>'
         )
     if d_path:
         rows += (
             f'<tr>'
-            f'<td>Dijkstra <span style="font-size:0.68rem;color:#9AAAC0;">h(n) = 0</span></td>'
+            f'<td><strong>Dijkstra</strong> <span style="font-size:0.75rem;color:#64748B;">h(n) = 0</span></td>'
             f'<td><b>{fmt_time(d_ttime)}</b></td>'
             f'<td>{len(d_path)-1}</td>'
             f'<td>{d_xfers}</td>'
-            f'<td style="color:#D42E12;font-weight:700;">{d_nodes}</td>'
-            f'<td style="color:#D42E12;">{dijkstra_ms:.1f} ms</td>'
-            f'<td>{_complexity} <span style="font-size:0.65rem;color:#D42E12;">large constant</span></td>'
+            f'<td style="color:#B45309;font-weight:700;">{d_nodes}</td>'
+            f'<td style="color:#B45309;font-weight:700;">{dijkstra_ms:.1f} ms</td>'
+            f'<td>{_complexity} <span style="font-size:0.75rem;color:#B45309;font-weight:600;margin-left:4px;">large const</span></td>'
             f'</tr>'
         )
 
     note_block = (
-        f'<div style="margin-top:0.65rem;font-size:0.72rem;color:#1A2035;'
-        f'padding:7px 10px;background:rgba(0,150,69,0.05);border-radius:6px;'
-        f'border-left:3px solid #009645;line-height:1.6;">{note}'
-        f' Both share the same <em>worst-case</em> complexity class — A*\'s advantage is a '
+        f'<div style="margin-top:0.85rem;font-size:0.85rem;color:#1E293B;'
+        f'padding:10px 12px;background:#F0FDF4;border-radius:8px;'
+        f'border:1px solid #BBF7D0;line-height:1.6;">{note}'
+        f' Both share the same worst-case complexity class — A*\'s advantage is a '
         f'<strong>smaller practical constant</strong> from heuristic pruning.</div>'
     ) if note else ""
 
+    astar_explainer = (
+        '<div class="cmp-wrap" style="padding:0;overflow:hidden;">'
+        '<details>'
+        # Summary = clickable header
+        '<summary style="list-style:none;cursor:pointer;padding:1rem 1.25rem;'
+        'display:flex;align-items:center;justify-content:space-between;'
+        'user-select:none;">'
+        '<span class="card-title" style="margin:0;">How does A* Pathfinding actually work?</span>'
+        '<span class="details-chevron" style="font-size:0.75rem;color:#64748B;transition:transform 0.2s;">▼</span>'
+        '</summary>'
+        # Collapsible body
+        '<div style="padding:0 1.25rem 1.25rem;border-top:1px solid #E2E8F0;">'
+        # Intro blurb
+        '<div style="font-size:0.85rem;color:#475569;margin:0.85rem 0;line-height:1.6;">'
+        'A* (A-Star) is an <strong>informed search algorithm</strong> that finds the shortest path '
+        'faster than Dijkstra by using a <strong>heuristic</strong> — a smart geographic estimate — '
+        'to guide its search toward the destination.'
+        '</div>'
+        # Formula pill
+        '<div style="text-align:center;margin-bottom:0.85rem;">'
+        '<code style="font-size:1rem;font-weight:700;background:#F1F5F9;color:#1A3A5C;'
+        'padding:7px 18px;border-radius:8px;border:1px solid #CBD5E1;letter-spacing:1px;">'
+        'f(n) = g(n) + h(n)'
+        '</code>'
+        '</div>'
+        # Explainer table
+        '<table class="cmp"><thead><tr>'
+        '<th style="width:60px;">Term</th>'
+        '<th style="width:120px;">Role</th>'
+        '<th>Definition</th>'
+        '</tr></thead><tbody>'
+        '<tr>'
+        '<td><code style="font-size:0.85rem;background:#F1F5F9;color:#1A3A5C;padding:2px 7px;border-radius:4px;font-weight:700;">g(n)</code></td>'
+        '<td><span style="background:#E8F5EE;color:#0F5C3A;font-size:0.75rem;font-weight:700;'
+        'padding:2px 8px;border-radius:4px;border:1px solid #B2DFCB;">Exact Cost</span></td>'
+        '<td style="color:#1E293B;">Actual travel time + transfer penalties accumulated from the <strong>start</strong> to the current station.</td>'
+        '</tr>'
+        '<tr>'
+        '<td><code style="font-size:0.85rem;background:#F1F5F9;color:#1A3A5C;padding:2px 7px;border-radius:4px;font-weight:700;">h(n)</code></td>'
+        '<td><span style="background:#FEF3C7;color:#B45309;font-size:0.75rem;font-weight:700;'
+        'padding:2px 8px;border-radius:4px;border:1px solid #FDE68A;">Heuristic</span></td>'
+        '<td style="color:#1E293B;">Estimated time to destination using '
+        '<strong>straight-line distance ÷ max train speed</strong> — never overestimates, so the optimal path is guaranteed.</td>'
+        '</tr>'
+        '</tbody></table>'
+        # Why it matters callout
+        '<div style="margin-top:0.85rem;font-size:0.85rem;color:#1E293B;'
+        'padding:10px 12px;background:#EFF6FF;border-radius:8px;'
+        'border:1px solid #BFDBFE;line-height:1.65;">'
+        '<strong>Why does this matter?</strong><br>'
+        'Dijkstra uses <code style="background:#F1F5F9;color:#334155;padding:1px 5px;border-radius:3px;">h(n) = 0</code>, '
+        'expanding nodes in <em>all directions equally</em>. '
+        'A* uses station coordinates to <strong>steer the search directly toward the destination</strong> — '
+        'exploring significantly fewer nodes while <strong>guaranteeing the same optimal route</strong>.'
+        '</div>'
+        '</div>'  # end body
+        '</details>'
+        '<style>'
+        'details[open] .details-chevron { transform: rotate(180deg); }'
+        'details summary::-webkit-details-marker { display:none; }'
+        '</style>'
+        '</div>'
+    )
+
     return (
-        '<div class="cmp-wrap" style="border-top:2.5px solid #1A3A5C;">'
-        '<div class="card-title" style="color:#1A3A5C;letter-spacing:1.2px;">'
-        'Algorithm Comparison: A* vs Dijkstra</div>'
-        '<div style="font-size:0.72rem;color:#5A6F8A;margin-bottom:0.65rem;line-height:1.55;">'
+        '<div class="cmp-wrap">'
+        '<div class="card-title">Algorithm Comparison: A* vs Dijkstra</div>'
+        '<div style="font-size:0.85rem;color:#475569;margin-bottom:0.85rem;line-height:1.55;">'
         'Both algorithms use the same edge cost (travel time + transfer penalty). '
-        'The only difference is <em>A* adds a heuristic</em> — Dijkstra does not.</div>'
+        'The only difference is <strong>A* adds a heuristic</strong> — Dijkstra does not.</div>'
         '<table class="cmp"><thead><tr>'
         '<th>Algorithm</th><th>Time</th><th>Stops</th>'
         '<th>Transfers</th><th>Nodes Explored</th><th>Compute</th><th>Complexity</th>'
         f'</tr></thead><tbody>{rows}</tbody></table>'
         f'{note_block}'
-        '</div>'
+        f'</div>'
+        f'{astar_explainer}'
     )
 
 
@@ -549,33 +615,41 @@ def build_map(path, explored_set=None, show_explored=True):
         _lc = LINE_COLORS.get(_ln, "#748477")
         _ln_name = LINE_NAMES.get(_ln, _ln)
         _leg_rows += (
-            f'<div style="display:flex;align-items:center;gap:6px;margin:2px 0;">'
-            f'<span style="display:inline-block;width:16px;height:4px;border-radius:2px;'
+            f'<div style="display:flex;align-items:center;gap:6px;margin:1.5px 0;">'
+            f'<span style="display:inline-block;width:14px;height:3.5px;border-radius:2px;'
             f'background:{_lc};flex-shrink:0;"></span>'
-            f'<span style="font-size:11px;color:#2E4060;">{_ln_name}</span></div>'
+            f'<span style="font-size:11px;color:#1E293B;font-weight:500;">{_ln_name}</span></div>'
         )
     # Group all LRT lines under one entry
     _leg_rows += (
-        '<div style="display:flex;align-items:center;gap:6px;margin:2px 0;">'
-        '<span style="display:inline-block;width:16px;height:4px;border-radius:2px;'
+        '<div style="display:flex;align-items:center;gap:6px;margin:1.5px 0;">'
+        '<span style="display:inline-block;width:14px;height:3.5px;border-radius:2px;'
         'background:#748477;flex-shrink:0;"></span>'
-        '<span style="font-size:11px;color:#2E4060;">LRT Lines</span></div>'
+        '<span style="font-size:11px;color:#1E293B;font-weight:500;">LRT Lines</span></div>'
     )
     _leg_rows += (
-        '<div style="display:flex;align-items:center;gap:6px;margin:2px 0;">'
-        '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;'
+        '<div style="display:flex;align-items:center;gap:6px;margin:1.5px 0;">'
+        '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;'
         'background:#F5A623;flex-shrink:0;margin-left:3px;"></span>'
-        '<span style="font-size:11px;color:#2E4060;">Transfer</span></div>'
+        '<span style="font-size:11px;color:#1E293B;font-weight:500;">Transfer</span></div>'
     )
     m.get_root().html.add_child(folium.Element(
-        '<div style="position:fixed;bottom:30px;right:10px;z-index:9999;'
-        'background:rgba(255,255,255,0.95);padding:9px 13px;border-radius:10px;'
-        'border:1.5px solid #DDE3EE;box-shadow:0 2px 8px rgba(0,0,0,0.12);font-family:sans-serif;">'
-        '<div style="font-size:10px;font-weight:700;color:#5A6F8A;text-transform:uppercase;'
-        'letter-spacing:1px;margin-bottom:5px;">MRT Lines</div>'
+        '<div style="position:fixed;bottom:10px;right:10px;z-index:9999;'
+        'background:rgba(255,255,255,0.95);padding:8px 12px;border-radius:8px;'
+        'border:1px solid #CBD5E1;box-shadow:0 2px 8px rgba(0,0,0,0.12);font-family:sans-serif;">'
+        '<div style="font-size:10px;font-weight:800;color:#64748B;text-transform:uppercase;'
+        'letter-spacing:1px;margin-bottom:4px;">MRT Lines</div>'
         + _leg_rows + '</div>'
     ))
+    
+    # Hide the default map attribution inside the iframe
+    m.get_root().html.add_child(folium.Element(
+        '<style>.leaflet-control-attribution { display: none !important; }</style>'
+    ))
 
+    # Add a fullscreen button to the map
+    plugins.Fullscreen(position='topright').add_to(m)
+    
     return m
 
 
@@ -591,7 +665,7 @@ st.markdown(
 )
 
 # ── layout ─────────────────────────────────────────────────────────────────────
-left, right = st.columns([1, 1.85], gap="large")
+left, right = st.columns([1, 2], gap="medium")
 
 # ═══════════════════ LEFT ═══════════════════
 
@@ -612,43 +686,47 @@ with left:
 
     st.markdown('<div class="journey-card"><div class="card-title">Plan Your Journey</div>', unsafe_allow_html=True)
 
-    # FROM
-    st.markdown('<div class="journey-field-label">FROM</div>', unsafe_allow_html=True)
-    start_disp = st.selectbox("", all_display, key="sel_start", label_visibility="collapsed")
-    start_full = display_to_full[start_disp]
-    s_lines  = get_line_codes(start_full)
-    s_badges = "".join(lbadge(l) for l in s_lines)
-    s_lnames = " · ".join(LINE_NAMES.get(l, l) for l in s_lines)
-    st.markdown(
-        f'<div class="journey-info">{s_badges}'
-        f'<span class="journey-info-lines">{s_lnames}</span></div>',
-        unsafe_allow_html=True,
-    )
+    # ── Google Maps Style Layout (Inputs on Left, Swap on Right) ──
+    col_inputs, col_swap = st.columns([0.88, 0.12], gap="small")
 
-    # Divider with functional Swap Button
-    col1, col2, col3 = st.columns([1, 0.15, 1], gap="small")
-    with col1:
-        st.markdown('<div style="height: 18px; border-bottom: 1.5px solid #DDE3EE;"></div>', unsafe_allow_html=True)
-    with col2:
+    with col_inputs:
+        # FROM
+        st.markdown('<div class="journey-field-label">FROM</div>', unsafe_allow_html=True)
+        start_disp = st.selectbox("Origin Station", all_display, key="sel_start", label_visibility="collapsed")
+        start_full = display_to_full[start_disp]
+        s_lines  = get_line_codes(start_full)
+        s_badges = "".join(lbadge(l) for l in s_lines)
+        s_lnames = " · ".join(LINE_NAMES.get(l, l) for l in s_lines)
+        st.markdown(
+            f'<div class="journey-info">{s_badges}'
+            f'<span class="journey-info-lines">{s_lnames}</span></div>',
+            unsafe_allow_html=True,
+        )
+
+        # Tiny gap between From and To
+        st.markdown('<div style="height: 6px;"></div>', unsafe_allow_html=True) 
+
+        # TO
+        st.markdown('<div class="journey-field-label">TO</div>', unsafe_allow_html=True)
+        end_disp = st.selectbox("Destination Station", all_display, key="sel_end", label_visibility="collapsed")
+        end_full = display_to_full[end_disp]
+        e_lines  = get_line_codes(end_full)
+        e_badges = "".join(lbadge(l) for l in e_lines)
+        e_lnames = " · ".join(LINE_NAMES.get(l, l) for l in e_lines)
+        st.markdown(
+            f'<div class="journey-info" style="margin-bottom:0;">{e_badges}'
+            f'<span class="journey-info-lines">{e_lnames}</span></div>',
+            unsafe_allow_html=True,
+        )
+
+    with col_swap:
+        # Pushes the button down so it centers perfectly between the two input fields
+        st.markdown('<div style="height: 105px;"></div>', unsafe_allow_html=True)
         st.button("⇅", on_click=swap_stations, key="btn_swap", help="Swap Origin and Destination", use_container_width=True)
-    with col3:
-        st.markdown('<div style="height: 18px; border-bottom: 1.5px solid #DDE3EE;"></div>', unsafe_allow_html=True)
-
-    # TO
-    st.markdown('<div class="journey-field-label">TO</div>', unsafe_allow_html=True)
-    end_disp = st.selectbox("", all_display, key="sel_end", label_visibility="collapsed")
-    end_full = display_to_full[end_disp]
-    e_lines  = get_line_codes(end_full)
-    e_badges = "".join(lbadge(l) for l in e_lines)
-    e_lnames = " · ".join(LINE_NAMES.get(l, l) for l in e_lines)
-    st.markdown(
-        f'<div class="journey-info">{e_badges}'
-        f'<span class="journey-info-lines">{e_lnames}</span></div>',
-        unsafe_allow_html=True,
-    )
 
     st.markdown('</div>', unsafe_allow_html=True)  # close journey-card
 
+    # ── Restore missing session state variables ──
     if "active_mode" not in st.session_state:
         st.session_state.active_mode = "fastest"
     active_mode = st.session_state.active_mode
@@ -691,15 +769,15 @@ with left:
         )
         _ac1, _ac2 = st.columns(2, gap="small")
         _algo_meta = [
-            ("astar",    "🔺", "A* Search",   "Uses h(n) = geographic distance heuristic"),
-            ("dijkstra", "⬡",  "Dijkstra",     "h(n) = 0 · Explores all directions uniformly"),
+            ("astar",    "A* Search",   "Uses h(n) = geographic distance heuristic"),
+            ("dijkstra", "Dijkstra",    "h(n) = 0 · Explores all directions uniformly"),
         ]
-        for _algo_key, _icon, _lbl, _desc in _algo_meta:
+        for _algo_key, _lbl, _desc in _algo_meta: # Removed _icon from the loop unpack
             _active = (_algo_key == active_algo)
             _bc = "#1A3A5C" if _active else "#DDE3EE"
             _bw = "2px" if _active else "1.5px"
             _bg = "rgba(26,58,92,0.04)" if _active else "#FFFFFF"
-            _vc = "#1A3A5C" if _active else "#5A6F8A"
+            _vc = "#0F172A" if _active else "#475569"
 
             # Pick result to display on the card
             if _algo_key == "astar":
@@ -715,14 +793,13 @@ with left:
             with _col:
                 st.markdown(
                     f'<div style="border:{_bw} solid {_bc};background:{_bg};'
-                    f'border-radius:12px 12px 0 0;padding:10px 10px 8px;text-align:center;">'
-                    f'<div style="font-size:20px;">{_icon}</div>'
-                    f'<div style="font-size:11px;font-weight:700;letter-spacing:1px;'
+                    f'border-radius:12px 12px 0 0;padding:10px 8px 8px;text-align:center;">'
+                    f'<div style="font-size:13px;font-weight:700;letter-spacing:1px;'
                     f'text-transform:uppercase;color:{_vc};margin:3px 0 1px;">{_lbl}</div>'
-                    f'<div style="font-size:10px;color:#9AAAC0;margin-bottom:4px;">{_desc}</div>'
-                    f'<div style="font-size:18px;font-weight:700;color:#1A2035;">{_nodes}</div>'
-                    f'<div style="font-size:10px;color:#5A6F8A;margin-bottom:2px;">nodes explored</div>'
-                    f'<div style="font-size:10px;color:#748477;">{_ms_val:.1f} ms</div>'
+                    f'<div style="font-size:11px;color:#64748B;margin-bottom:6px;">{_desc}</div>'
+                    f'<div style="font-size:18px;font-weight:700;color:#0F172A;">{_nodes}</div>'
+                    f'<div style="font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">nodes explored</div>'
+                    f'<div style="font-size:11px;color:#64748B;">{_ms_val:.1f} ms</div>'
                     f'</div>',
                     unsafe_allow_html=True,
                 )
@@ -811,7 +888,6 @@ with left:
             segs       = get_path_segments(path, graph)
             lines_used = [s[0] for s in segs if s[0] != "transfer"]
 
-            st.markdown(build_lines_html(lines_used, _display_ms), unsafe_allow_html=True)
             st.markdown(build_route_html(path),                    unsafe_allow_html=True)
             st.markdown(build_directions_html(path),               unsafe_allow_html=True)
 
@@ -826,6 +902,9 @@ with right:
         "shortest_distance": "Shortest Distance · A* (Distance Heuristic)",
         "fewest_stations":   "Fewest Stations · A* (Hop Count)",
     }
+    
+    show_map_explored = False  # Default state
+    
     if results:
         # Pick the result to show based on active algorithm
         if active_algo == "astar":
@@ -838,37 +917,47 @@ with right:
         path, g, xfers, ttime, dist, nodes_exp, _active_explored = _right_result
         if path:
             st.markdown(
-                f'<div style="font-size:0.72rem;font-weight:600;color:#1A3A5C;'
+                f'<div style="font-size:0.75rem;font-weight:700;color:#0F172A;'
                 f'margin-bottom:0.2rem;letter-spacing:0.3px;">{_right_label}</div>',
                 unsafe_allow_html=True,
             )
             st.markdown(build_stats_html(ttime, len(path)-1, xfers, dist, nodes_exp),
                         unsafe_allow_html=True)
+            
+            # ── The Interactive Toggle ──
+            show_map_explored = st.toggle("Show Explored Nodes on Map", value=True)
 
+    # ── Map Title with Dynamic Suffix ──
     _exp_suffix = {
-        "astar":    ' <span style="font-size:0.68rem;color:#009645;font-weight:600;">· A* explored nodes</span>',
-        "dijkstra": ' <span style="font-size:0.68rem;color:#D42E12;font-weight:600;">· Dijkstra explored nodes</span>',
+        "astar":    ' <span style="font-size:0.75rem;color:#009645;font-weight:700;">· A* explored</span>',
+        "dijkstra": ' <span style="font-size:0.75rem;color:#B45309;font-weight:700;">· Dijkstra explored</span>',
     }
+    
+    _title_suffix = _exp_suffix.get(active_algo, "") if show_map_explored else ""
+
     st.markdown(
-        f'<div class="card-title" style="margin-bottom:0.4rem;">🗺️ &nbsp;Interactive Route Map'
-        f'{_exp_suffix.get(active_algo, "")}</div>',
+        f'<div class="card-title" style="margin-top:0.6rem; margin-bottom:0.4rem;">&nbsp;Interactive Route Map'
+        f'{_title_suffix}</div>',
         unsafe_allow_html=True,
     )
 
+    # ── Map Data Processing ──
     path = []
     _map_explored = set()
     if results:
         if active_algo == "astar":
             path = results[active_mode][0]
-            _map_explored = results[active_mode][6]
+            # Only pass the explored set to the map if the toggle is ON
+            if show_map_explored:
+                _map_explored = results[active_mode][6]
         else:
             _dr = dijkstra_results.get(active_mode)
             path = _dr[0] if _dr else []
-            if _dr:
+            # Only pass the explored set to the map if the toggle is ON
+            if _dr and show_map_explored:
                 _map_explored = _dr[6]
 
-    st_folium(build_map(path, _map_explored, bool(_map_explored)), width=None, height=665, returned_objects=[])
-
+    st_folium(build_map(path, _map_explored, bool(_map_explored)), width=None, height=718, returned_objects=[])
     # ── Comparison table below the map ────────────────────────────────────────
     if results:
         _cmp_data    = results         if active_algo == "astar" else dijkstra_results

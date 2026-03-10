@@ -30,7 +30,7 @@ MRT_SPEED_HEURISTIC = 45.0
 
 # Conservative lower-bound on inter-station distance (km).
 # Used by the fewest_stations heuristic.
-_MIN_SEGMENT_KM = 0.4
+_MIN_SEGMENT_KM = 0.37  # below actual min (Rumbia-Bakau SE line: 0.380 km)
 
 
 # ── Shared utility ────────────────────────────────────────────────────────────
