@@ -78,7 +78,7 @@ f(n) = g(n) + h(n)
 | Fastest | haversine(n, goal) ÷ 45 km/h → lower-bound minutes | ✓ |
 | Shortest Distance | haversine(n, goal) → lower-bound km | ✓ |
 | Least Transfers | 0 if current line serves goal, else 1 | ✓ |
-| Fewest Stations | haversine(n, goal) ÷ 0.37 km → lower-bound hops | ⚠ May overestimate on routes with multiple interchanges due to near-zero-distance transfer edges |
+| Fewest Stations | haversine(n, goal) ÷ 0.37 km → lower-bound hops | May overestimate on routes with multiple interchanges due to near-zero-distance transfer edges |
 
 ---
 
