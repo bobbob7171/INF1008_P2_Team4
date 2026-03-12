@@ -32,10 +32,11 @@ st.markdown("""
 
 *, html, body { font-family: 'DM Sans', sans-serif !important; }
 
-/* App shell */
-.stApp                { background: #F5F7FA !important; color: #1E293B !important; }
+/* App shell – force light mode regardless of OS/browser preference */
+.stApp                { background: #F5F7FA !important; color: #1E293B !important; color-scheme: light !important; }
 [data-testid="stHeader"] { background: transparent !important; }
 .block-container      { padding: 0 1.5rem 2rem !important; max-width: 100% !important; }
+html, body            { color-scheme: light !important; }
 
 /* ── Selectbox ── */
 div[data-baseweb="select"] > div               { background: #FFFFFF !important; border: 1.5px solid #CBD5E1 !important; border-radius: 10px !important; color: #1E293B !important; }
@@ -174,6 +175,31 @@ div.stButton > button:hover, div[data-testid="stButton"] > button:hover {
 }
 div.stButton > button[kind="primary"], div[data-testid="stButton"] > button[kind="primary"] {
     background-color: #009645 !important; color: #FFFFFF !important; border: none !important;
+}
+
+/* Fix swap button specifically – ensure it never goes black */
+button[kind="secondary"], button[data-testid*="btn_swap"] {
+    background-color: #FFFFFF !important; color: #1E293B !important;
+    border: 1px solid #CBD5E1 !important;
+}
+
+/* ── Toggle (Show Explored Nodes) ── */
+div[data-testid="stToggle"] {
+    display: flex !important; align-items: center !important; gap: 8px !important;
+}
+div[data-testid="stToggle"] label {
+    color: #1E293B !important; font-size: 0.85rem !important;
+    font-weight: 500 !important; visibility: visible !important;
+    opacity: 1 !important;
+}
+/* Track OFF state */
+div[data-testid="stToggle"] input + div,
+div[data-testid="stToggle"] input:not(:checked) + div {
+    background-color: #CBD5E1 !important;
+}
+/* Track ON state – blue, not red */
+div[data-testid="stToggle"] input:checked + div {
+    background-color: #0079FF !important;
 }
 </style>
 """, unsafe_allow_html=True)
