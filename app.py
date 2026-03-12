@@ -164,20 +164,6 @@ div[data-testid="stRadio"] label span    { font-size: 0.85rem !important; color:
     padding: 1rem 1.25rem 0.75rem !important; background: #FFFFFF !important;
 }
 
-/* ── Toggle (explored nodes) ── */
-div[data-testid="stToggle"] p,
-div[data-testid="stCheckbox"] p {
-    font-size: 0.82rem !important; font-weight: 600 !important;
-    color: #334155 !important; letter-spacing: 0.2px;
-}
-/* Toggle track — BaseUI renders it as the first div child of the label */
-div[data-testid="stCheckbox"] label > div:first-child {
-    background-color: #94A3B8 !important;
-}
-div[data-testid="stCheckbox"] label:has(input:checked) > div:first-child {
-    background-color: #009645 !important;
-}
-
 /* Fix secondary buttons */
 div.stButton > button, div[data-testid="stButton"] > button {
     background-color: #FFFFFF !important; color: #1E293B !important;
@@ -939,18 +925,7 @@ with right:
                         unsafe_allow_html=True)
             
             # ── The Interactive Toggle ──
-            with st.container(border=True):
-                st.markdown(
-                    '<div style="font-size:0.7rem;font-weight:700;letter-spacing:1.2px;'
-                    'text-transform:uppercase;color:#334155;margin-bottom:2px;">Map Overlay</div>'
-                    '<div style="font-size:0.75rem;color:#64748B;margin-bottom:4px;">'
-                    'Show stations the algorithm visited, not just the final route</div>',
-                    unsafe_allow_html=True,
-                )
-                show_map_explored = st.toggle(
-                    "Show Explored Nodes on Map",
-                    value=True,
-                )
+            show_map_explored = st.toggle("Show Explored Nodes on Map", value=True)
 
     # ── Map Title with Dynamic Suffix ──
     _exp_suffix = {
