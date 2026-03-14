@@ -111,7 +111,11 @@ def dijkstra(graph: dict, stations: dict, start_name: str, end_name: str,
             elif mode == "shortest_distance":
                 move_cost = dist_km
             elif mode == "fewest_stations":
-                move_cost = 1.0
+                # Match astar.py: transfer edges are platform walks, not station
+                # stops. Counting them as 1 would mean edge costs differ between
+                # Dijkstra and A*, breaking the controlled comparison in which
+                # the heuristic is the only variable.
+                move_cost = 0.0 if edge_line == "transfer" else 1.0
             else:
                 move_cost = travel_time
 
