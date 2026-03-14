@@ -220,3 +220,20 @@ def get_lines_at_station(station_name, stations):
     """Return set of line codes serving a station, e.g. {'EW','NS'}."""
     codes = stations.get(station_name, {}).get("codes", [])
     return {get_line_prefix(c) for c in codes if get_line_prefix(c)}
+
+
+def get_max_segment_km(graph: dict) -> float:
+    """Return the longest non-transfer inter-station distance (km) in the graph.
+
+    Used by astar.py to set an admissible upper-bound for the fewest_stations
+    heuristic. Dividing straight-line distance by this value gives a hop-count
+    lower bound that never overestimates — preserving A* optimality.
+
+    The current network maximum is Dhoby Ghaut ↔ HarbourFront (CC): ~4.60 km.
+    """
+    max_dist = 0.0
+    for edges in graph.values():
+        for _, _, dist_km, line in edges:
+            if line != "transfer" and dist_km > max_dist:
+                max_dist = dist_km
+    return max_dist

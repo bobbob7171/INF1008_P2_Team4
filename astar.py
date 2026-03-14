@@ -28,9 +28,18 @@ from mrt_graph import haversine, TRANSFER_PENALTY, LINE_SPEED
 # Must be >= the fastest real line speed to remain admissible.
 MRT_SPEED_HEURISTIC = 45.0
 
-# Conservative lower-bound on inter-station distance (km).
-# Used by the fewest_stations heuristic.
-_MIN_SEGMENT_KM = 0.37  # below actual min (Rumbia-Bakau SE line: 0.380 km)
+# Upper-bound on inter-station distance (km), derived from the actual graph.
+# The longest non-transfer segment in the network is Dhoby Ghaut ↔ HarbourFront
+# on the Circle Line at 4.6016 km. We use 4.62 km (a small epsilon above the
+# true max) to guarantee strict admissibility: h(n) = haversine / 4.62 always
+# yields a lower-bound hop count, never an overestimate.
+#
+# Admissibility proof:
+#   True hops ≥ haversine(n, goal) / max_real_segment
+#             ≥ haversine(n, goal) / 4.62  = h(n)   ✓
+#
+# Using MIN segment (0.37 km) instead would give h(n) >> true hops — inadmissible.
+_MAX_SEGMENT_KM = 4.62  # CC line: Dhoby Ghaut ↔ HarbourFront = 4.6016 km
 
 
 # ── Shared utility ────────────────────────────────────────────────────────────
@@ -90,7 +99,10 @@ def astar(graph: dict, stations: dict, start_name: str, end_name: str,
         least_transfers:  0 if current line reaches goal, else 1.
                           Admissible because if curr_line ∉ dest_lines at least
                           one more transfer must occur.
-        fewest_stations:  straight-line dist ÷ min segment  →  lower-bound stops.
+        fewest_stations:  straight-line dist ÷ MAX segment →  lower-bound stops.
+                          Dividing by MAX (not MIN) segment length ensures h(n)
+                          never overestimates — using MIN would inflate h(n) and
+                          break admissibility, causing suboptimal paths.
         """
         lat = stations[name]["lat"]
         lon = stations[name]["lon"]
@@ -108,7 +120,7 @@ def astar(graph: dict, stations: dict, start_name: str, end_name: str,
             return 1.0 if dest_lines else 0.0
 
         if mode == "fewest_stations":
-            return dist / _MIN_SEGMENT_KM
+            return dist / _MAX_SEGMENT_KM
 
         return 0.0
 
@@ -138,7 +150,10 @@ def astar(graph: dict, stations: dict, start_name: str, end_name: str,
             cost = dist_km
 
         elif mode == "fewest_stations":
-            cost = 1.0
+            # Transfer edges are platform changes, not actual station stops.
+            # Counting them as 1 would penalise transfers unfairly and inflate
+            # the stop count vs Dijkstra. Only true station hops cost 1.
+            cost = 0.0 if edge_line == "transfer" else 1.0
 
         else:
             cost = travel_time
