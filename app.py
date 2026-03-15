@@ -761,6 +761,9 @@ with left:
         st.session_state.active_algo = "astar"
     active_algo = st.session_state.active_algo
 
+    if "show_explored" not in st.session_state:
+        st.session_state.show_explored = False
+
     # ── Auto-compute on every render ──────────────────────
     dijkstra_results = {}
     dijkstra_timings = {}
@@ -929,8 +932,6 @@ with right:
         "fewest_stations":   "Fewest Stations · A* (Hop Count)",
     }
     
-    show_map_explored = False  # Default state
-    
     if results:
         # Pick the result to show based on active algorithm
         if active_algo == "astar":
@@ -949,9 +950,17 @@ with right:
             )
             st.markdown(build_stats_html(ttime, len(path)-1, xfers, dist, nodes_exp),
                         unsafe_allow_html=True)
-            
+
             # ── The Interactive Toggle ──
-            show_map_explored = st.toggle("Show Explored Nodes on Map", value=True)
+            # key="show_explored" binds to session_state so it persists
+            # across reruns triggered by algorithm/mode button clicks.
+            # Default False (off) is set during session state init above.
+            st.toggle(
+                "Show Explored Nodes on Map",
+                key="show_explored",
+            )
+
+    show_map_explored = st.session_state.get("show_explored", False)
 
     # ── Map Title with Dynamic Suffix ──
     _exp_suffix = {
